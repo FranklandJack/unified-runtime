@@ -22,3 +22,31 @@ params:
       desc: "[in] pointer to tear down parameters"
 returns:
     - $X_RESULT_OUT_OF_HOST_MEMORY
+--- #--------------------------------------------------------------------------
+type: function
+desc: "Retrieve the last error returned by the API."
+class: $x
+name: GetLastError
+decl: static
+ordinal: "0"
+details:
+    - "The ppMessage argument is optional."
+    - "The string returned via the ppMessage is a NULL terminated C style string."
+    - "The string returned via the ppMessage is owned by the runtime. Any caller of
+      this API will need to make a copy of the string if they wish to retain
+      it."
+    - "The application may call this function from simultaneous
+      threads."
+    - "If this API is used in a multi-threaded context concurrent access to the
+      ppMessage argument in the application should be protected with a mutex e.g.
+      calling the API then strcpy on the message whilst calling the API concurrently
+      from another thread could result on a data race on the underlying memory in
+      the runtime."
+    - "The implementation of this function should be lock-free."
+params:
+    - type: $x_result_t*
+      name: pResult
+      desc: "[out] the last error reported."
+    - type: const char**
+      name: ppMessage
+      desc: "[out] optional pointer to a string containing detailed context on the reason for the last error reported by the API."

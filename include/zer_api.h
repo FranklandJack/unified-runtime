@@ -1969,6 +1969,38 @@ zerTearDown(
     void* pParams                                   ///< [in] pointer to tear down parameters
     );
 
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Retrieve the last error returned by the API.
+/// 
+/// @details
+///     - The ppMessage argument is optional.
+///     - The string returned via the ppMessage is a NULL terminated C style
+///       string.
+///     - The string returned via the ppMessage is owned by the runtime. Any
+///       caller of this API will need to make a copy of the string if they wish
+///       to retain it.
+///     - The application may call this function from simultaneous threads.
+///     - If this API is used in a multi-threaded context concurrent access to
+///       the ppMessage argument in the application should be protected with a
+///       mutex e.g. calling the API then strcpy on the message whilst calling
+///       the API concurrently from another thread could result on a data race
+///       on the underlying memory in the runtime.
+///     - The implementation of this function should be lock-free.
+/// 
+/// @returns
+///     - ::ZER_RESULT_SUCCESS
+///     - ::ZER_RESULT_ERROR_UNINITIALIZED
+///     - ::ZER_RESULT_ERROR_DEVICE_LOST
+///     - ::ZER_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pResult`
+///         + `nullptr == ppMessage`
+ZER_APIEXPORT zer_result_t ZER_APICALL
+zerGetLastError(
+    zer_result_t* pResult,                          ///< [out] the last error reported.
+    const char** ppMessage                          ///< [out] optional pointer to a string containing detailed context on the
+                                                    ///< reason for the last error reported by the API.
+    );
+
 #if !defined(__GNUC__)
 #pragma endregion
 #endif
@@ -6404,6 +6436,29 @@ typedef void (ZER_APICALL *zer_pfnTearDownCb_t)(
     );
 
 ///////////////////////////////////////////////////////////////////////////////
+/// @brief Callback function parameters for zerGetLastError 
+/// @details Each entry is a pointer to the parameter passed to the function;
+///     allowing the callback the ability to modify the parameter's value
+typedef struct _zer_get_last_error_params_t
+{
+    zer_result_t** ppResult;
+    const char*** pppMessage;
+} zer_get_last_error_params_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Callback function-pointer for zerGetLastError 
+/// @param[in] params Parameters passed to this instance
+/// @param[in] result Return value
+/// @param[in] pTracerUserData Per-Tracer user data
+/// @param[in,out] ppTracerInstanceUserData Per-Tracer, Per-Instance user data
+typedef void (ZER_APICALL *zer_pfnGetLastErrorCb_t)(
+    zer_get_last_error_params_t* params,
+    zer_result_t result,
+    void* pTracerUserData,
+    void** ppTracerInstanceUserData
+    );
+
+///////////////////////////////////////////////////////////////////////////////
 /// @brief Callback function parameters for zerInit 
 /// @details Each entry is a pointer to the parameter passed to the function;
 ///     allowing the callback the ability to modify the parameter's value
@@ -6431,6 +6486,7 @@ typedef void (ZER_APICALL *zer_pfnInitCb_t)(
 typedef struct _zer_global_callbacks_t
 {
     zer_pfnTearDownCb_t                                             pfnTearDownCb;
+    zer_pfnGetLastErrorCb_t                                         pfnGetLastErrorCb;
     zer_pfnInitCb_t                                                 pfnInitCb;
 } zer_global_callbacks_t;
 
